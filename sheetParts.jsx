@@ -2,6 +2,7 @@
 // única adição: a prop `only` em Cards, que mostra um único item/habilidade).
 import {useRef} from 'react';
 import {uid,readImage} from './storage.js';
+import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 export const clean=h=>{const d=new DOMParser().parseFromString(h||'','text/html');
   d.querySelectorAll('script,iframe,object,embed,style,link').forEach(n=>n.remove());
   d.body.querySelectorAll('*').forEach(n=>[...n.attributes].forEach(a=>{if(/^on/i.test(a.name)||/^\s*javascript:/i.test(a.value))n.removeAttribute(a.name)}));
@@ -31,9 +32,9 @@ export function Cards({s,kind,ed,en,canAdd,isM,notify,use,only}){
     if(c.hide&&!isM)return null;
     if(sk&&!c.on&&!isM)return <div className="gcard lockc" key={c.id}>🔒<br/>Bloqueada</div>;
     return <div className="gcard" key={c.id} style={{background:c.bg,borderColor:c.bc}}>
-      {en?<div className="row"><input className="ic" value={c.icon} onChange={e=>set(i,'icon',e.target.value)}/><input className="nm" value={c.name} onChange={e=>set(i,'name',e.target.value)}/></div>:<h4>{c.icon} {c.name}</h4>}
+      {en?<div className="row"><IconEdit value={c.icon} on={v=>set(i,'icon',v)}/><input className="nm" value={c.name} onChange={e=>set(i,'name',e.target.value)}/></div>:<h4><Ico v={c.icon}/> {c.name}</h4>}
       <div className="cimg">{c.img?<img src={c.img} alt=""/>:<span>🖼️</span>}</div>
-      {en&&<Up on={u=>set(i,'img',u)}/>}
+      {en&&<div className="row"><ImgUp obj={c} field="img" ratio={16/10} out={640} on={r=>ed(d=>{setImg(d[kind][i],'img',r)})}/>{c.img&&<button className="btn sm danger" onClick={()=>ed(d=>{clearImg(d[kind][i],'img')})}>Remover</button>}</div>}
       {fl.map(([k,l,a])=>en?<label key={k} className="lab">{l}{a?<textarea rows={3} value={c[k]||''} onChange={e=>set(i,k,e.target.value)}/>:<input value={c[k]||''} onChange={e=>set(i,k,e.target.value)}/>}</label>:c[k]?<p key={k} className="txt"><b>{l}:</b> {c[k]}</p>:null)}
       {(c.extra||[]).map((x,j)=>en?<div className="row" key={j}><input value={x.k} placeholder="Campo" onChange={e=>setE(i,j,'k',e.target.value)}/><input value={x.v} placeholder="Valor" onChange={e=>setE(i,j,'v',e.target.value)}/><button className="x" onClick={()=>ed(d=>{d[kind][i].extra.splice(j,1)})}>×</button></div>:<p key={j} className="txt"><b>{x.k}:</b> {x.v}</p>)}
       {en&&<><button className="btn sm" onClick={()=>ed(d=>{(d[kind][i].extra??=[]).push({k:'',v:''})})}>＋ Campo</button>

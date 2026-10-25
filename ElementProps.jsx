@@ -3,6 +3,7 @@ import {useState,useEffect,useRef} from 'react';
 import {TYPES,FONTS,COLL,GROUP,CORE,setElement,setBg,setBorder,setCanvasHeight,layerOp,duplicateElement,removeElement,defaultLayout,copyLayout} from './layoutLogic.js';
 import {Up} from './sheetParts.jsx';
 
+import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 // Número: edita localmente e confirma ao sair do campo / Enter (evita uma gravação por tecla).
 function Num({label,value,on,min,max,ph}){
   const [v,setV]=useState(String(value));useEffect(()=>setV(String(value)),[value]);
@@ -47,7 +48,7 @@ export function ElementProps({el,s,layout,commit,onSel}){
     {opts.length>0&&<label className="lab">{t==='text'?'Conteúdo':'Dado mostrado'}<select value={cur} onChange={e=>set({bind:bindFrom(t,e.target.value)})}>{opts.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label>}
     {t==='text'&&!el.bind&&<label className="lab">Texto<textarea rows={3} value={el.text||''} onChange={e=>set({text:e.target.value})}/></label>}
     {t!=='image'&&<label className="lab">Título<input value={el.title||''} onChange={e=>set({title:e.target.value})}/></label>}
-    {t==='image'&&<><div className="row"><Up label="🖼️ Enviar imagem" max={900} on={u=>set({src:u,useCover:false})}/>{el.src&&<button className="btn sm" onClick={()=>set({src:''})}>Remover</button>}</div>
+    {t==='image'&&<><div className="row"><ImgUp label="🖼️ Enviar imagem" obj={el} field="src" ratio={Math.max(.2,Math.min(5,el.w/el.h))} out={900} on={r=>set({src:r.img,srcO:r.orig,srcC:r.crop,useCover:false})}/>{el.src&&<button className="btn sm" onClick={()=>set({src:'',srcO:'',srcC:null})}>Remover</button>}</div>
       <label className="sw"><input type="checkbox" checked={!!el.useCover} onChange={e=>set({useCover:e.target.checked})}/> Usar o retrato do personagem</label>
       <label className="lab">Ajuste<select value={el.imgFit||'cover'} onChange={e=>set({imgFit:e.target.value})}><option value="cover">Preencher (corta o excesso)</option><option value="contain">Conter (mostra inteira)</option><option value="center">Centralizar (tamanho original)</option></select></label></>}
     {t==='field'&&<><label className="sw"><input type="checkbox" checked={el.showLabel!==false} onChange={e=>set({showLabel:e.target.checked})}/> Mostrar rótulo</label>

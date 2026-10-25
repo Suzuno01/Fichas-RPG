@@ -3,6 +3,7 @@ import {useApp} from './ctx.js';
 import {uid,now} from './storage.js';
 import {newSheet} from './model.js';
 import {AddExisting} from './Campaigns.jsx';
+import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 const fmt=d=>d?new Date(d).toLocaleString('pt-BR'):'nunca';
 
 export function SheetCard({s}){
@@ -69,7 +70,7 @@ export function Overview({kind}){
     {!L.length&&<p className="empty">Nada por aqui ainda. Abra uma ficha para criar.</p>}
     {L.map(s=><section key={s.id} className="panel"><h3>{s.charName} <small>{s.name}</small>
       <button className="btn sm" onClick={()=>open(s.id,{skills:'habs',items:'itens',tree:'arvore'}[kind])}>Abrir</button></h3>
-      <div className="chips">{s[kind].filter(c=>kind!=='skills'||c.on||isM).map(c=><span className="chip" style={{borderColor:c.bc}} key={c.id}>{c.icon} {c.name}{kind==='items'&&c.qty?` ×${c.qty}`:''}</span>)}</div></section>)}</div>;
+      <div className="chips">{s[kind].filter(c=>kind!=='skills'||c.on||isM).map(c=><span className="chip" style={{borderColor:c.bc}} key={c.id}><Ico v={c.icon}/> {c.name}{kind==='items'&&c.qty?` ×${c.qty}`:''}</span>)}</div></section>)}</div>;
 }
 
 export function Players(){

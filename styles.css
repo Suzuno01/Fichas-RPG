@@ -172,3 +172,10 @@ aside{border-right-color:var(--c1,#6b5320)}
 .ep h4{margin:0 0 6px}.ep h5{margin:12px 0 4px;color:var(--ti);border-bottom:1px solid var(--bo)}.ep .g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}.ep .row{margin:4px 0}.ep small.empty{font-size:.75em}
 .nmod.wide{width:min(900px,100%)!important}
 @media(max-width:900px){.vebody{grid-template-columns:minmax(0,1fr)}.veside{position:static;max-height:none}}
+
+/* ícones PNG e editor de enquadramento */
+.ico{height:1.15em;width:1.15em;object-fit:contain;vertical-align:-.2em}.ico.big{height:34px;width:34px}
+.icedit{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cropbox{display:grid;place-items:center;margin:10px 0;padding:8px;border-radius:10px;background:repeating-conic-gradient(#3a3a3a 0% 25%,#2a2a2a 0% 50%) 50%/16px 16px}
+.cropbox canvas{box-shadow:0 0 0 2px var(--c1,#d4a34a);max-width:100%}
+.btn.sm.on{outline:2px solid var(--c1,#d4a34a)}

@@ -3,6 +3,7 @@ import {useApp} from './ctx.js';
 import {uid,now,readImage} from './storage.js';
 import * as T from './treeLogic.js';
 
+import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 const CW=176,CH=138,ICO={done:'✓',open:'🔓',lock:'🔒'},dt=d=>d?new Date(d).toLocaleString('pt-BR'):'';
 const clampK=k=>Math.min(2.5,Math.max(.2,k));
 
@@ -48,7 +49,7 @@ function Canvas({tree,info,sel,onSel,edit,onMove}){
       {N.map(n=>{const p=P(n),e=edit?null:info(n),st=e?e.state:'edit',col=n.color||undefined;
         return <button key={n.id} className={'tn '+st+(sel===n.id?' sel':'')} style={{left:p.x,top:p.y,width:CW,height:CH,'--nc':col}}
           onPointerDown={edit?ev=>{ev.stopPropagation();start(ev,n.id)}:undefined} onClick={()=>{if(!R.current.moved)onSel(n)}}>
-          <div className="tni">{n.img?<img src={n.img} alt=""/>:n.icon||'✨'}</div><b>{n.name}</b>
+          <div className="tni">{n.img?<img src={n.img} alt=""/>:<Ico v={n.icon||'✨'}/>}</div><b>{n.name}</b>
           {e?<ul>{e.checks.slice(0,3).map(c=><li key={c.id} className={c.ok?'ok':'no'}>{c.ok?'✓':'✗'} {c.label}</li>)}{e.checks.length>3&&<li>+{e.checks.length-3}…</li>}</ul>
             :<small>{n.type} · {(n.reqs||[]).length} req.</small>}
           <em>{T.costOf(n)} {T.costOf(n)===1?'ponto':'pontos'}</em><span className="tns">{e?ICO[st]:'✎'}</span></button>})}</div>
@@ -65,7 +66,7 @@ function NodeModal({s,tree,node,close,isM,self,run}){
   const miss=e.checks.filter(c=>!c.ok);
   const go=()=>{const a=ask;setAsk(null);run(a,node);close()};
   return <div className="modal" onClick={close}><div className="panel nmod" onClick={x=>x.stopPropagation()} style={{borderColor:node.color||undefined}}>
-    <div className="tmh"><div className="tni big">{node.img?<img src={node.img} alt=""/>:node.icon||'✨'}</div>
+    <div className="tmh"><div className="tni big">{node.img?<img src={node.img} alt=""/>:<Ico v={node.icon||'✨'}/>}</div>
       <div><h3>{node.name}</h3><small>{node.type} · {cost} {cost===1?'ponto':'pontos'}</small><div><span className={'badge '+e.state}>{ICO[e.state]} {T.STATE[e.state]}</span>{en?.master&&<span className="badge master">👑 Liberada pelo Mestre</span>}</div></div></div>
     {node.desc&&<p className="txt">{node.desc}</p>}
     <h4>Requisitos {e.checks.length>1&&<small>({e.mode==='any'?'cumpra qualquer um':'cumpra todos'})</small>}</h4>
@@ -119,11 +120,11 @@ export function TreeTab({s,isM,ed,ntf,mine}){
   const pv=tree&&T.previewReset(s,tree),{done,total}=tree?T.progressCount(s,tree):{done:0,total:0};
   return <div><div className="row"><b>Pontos de habilidade: {prog.points}</b><span>· Nível {T.levelOf(s)}</span></div>
     {isM&&<div className="row"><select value="" onChange={e=>{const id=e.target.value;if(id){ed(x=>{const q=T.normProg(x);q.trees.includes(id)||q.trees.push(id)});setTid(id)}}}>
-        <option value="">＋ Atribuir árvore a esta ficha…</option>{free.map(t=><option key={t.id} value={t.id}>{t.icon} {t.name}</option>)}</select>
+        <option value="">＋ Atribuir árvore a esta ficha…</option>{free.map(t=><option key={t.id} value={t.id}>{icoText(t.icon)} {t.name}</option>)}</select>
       {!all.length&&<small className="empty">Crie árvores em 🌳 Árvore (menu).</small>}</div>}
-    {mineT.length>1&&<div className="tabs">{mineT.map(t=><button key={t.id} className={t.id===tree?.id?'on':''} onClick={()=>setTid(t.id)}>{t.icon} {t.name}</button>)}</div>}
+    {mineT.length>1&&<div className="tabs">{mineT.map(t=><button key={t.id} className={t.id===tree?.id?'on':''} onClick={()=>setTid(t.id)}><Ico v={t.icon}/> {t.name}</button>)}</div>}
     {!tree&&<p className="empty">{isM?'Nenhuma árvore atribuída a esta ficha.':'O Mestre ainda não atribuiu uma árvore a esta ficha.'}</p>}
-    {tree&&<><div className="row"><h3>{tree.icon} {tree.name}</h3><span className="chip">{done} / {total} habilidades</span>
+    {tree&&<><div className="row"><h3><Ico v={tree.icon}/> {tree.name}</h3><span className="chip">{done} / {total} habilidades</span>
         {isM&&<><button className="btn sm danger" onClick={()=>setRs(true)}>↺ Resetar progresso</button>
           <button className="btn sm" onClick={()=>confirm('Remover esta árvore da ficha? O progresso é mantido caso ela seja atribuída de novo.')&&ed(x=>{const q=T.normProg(x);q.trees=q.trees.filter(i=>i!==tree.id)})}>Remover da ficha</button></>}</div>
       {tree.desc&&<p className="txt sub">{tree.desc}</p>}
@@ -132,7 +133,7 @@ export function TreeTab({s,isM,ed,ntf,mine}){
     {node&&tree&&<NodeModal s={s} tree={tree} node={tree.nodes.find(n=>n.id===node.id)||node} close={()=>setNode(null)} isM={isM} self={self} run={run}/>}
     {rs&&tree&&<Ask title="Resetar progresso desta árvore" danger yes="RESETAR" onNo={()=>setRs(false)} onYes={()=>{ed(x=>{T.resetTree(x,tree)});setRs(false)}}>
       <p>Tem certeza que deseja resetar o progresso desta árvore?</p>
-      {pv.nodes.length?<><p className="sub">Serão bloqueadas {pv.nodes.length} habilidades:</p><div className="chips">{pv.nodes.map(n=><span className="chip" key={n.id}>{n.icon} {n.name}</span>)}</div>
+      {pv.nodes.length?<><p className="sub">Serão bloqueadas {pv.nodes.length} habilidades:</p><div className="chips">{pv.nodes.map(n=><span className="chip" key={n.id}><Ico v={n.icon}/> {n.name}</span>)}</div>
         <p>Pontos devolvidos: <b>{pv.refund}</b> (liberações do Mestre não devolvem pontos).</p></>:<p className="sub">Nenhuma habilidade desbloqueada: nada será alterado.</p>}</Ask>}
   </div>;
 }
@@ -150,9 +151,9 @@ function NodeEditor({tree,node,close,sheets}){
     <Dl id="dl-skill" list={sheets.flatMap(s=>s.skills.map(k=>k.name))}/><Dl id="dl-item" list={sheets.flatMap(s=>s.items.map(k=>k.name))}/>
     <Dl id="dl-attr" list={sheets.flatMap(s=>s.attrs.map(k=>k.name))}/><Dl id="dl-mark" list={sheets.flatMap(s=>(s.marks||[]).map(k=>k.name))}/>
     <h3>✎ Editar habilidade</h3>
-    <div className="row nw"><input className="ic" value={node.icon} onChange={e=>set('icon',e.target.value)}/><input value={node.name} onChange={e=>set('name',e.target.value)}/></div>
-    <div className="row"><label className="btn sm">🖼️ Imagem<input hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];f&&readImage(f,u=>set('img',u),160);e.target.value=''}}/></label>
-      {node.img&&<button className="btn sm danger" onClick={()=>set('img','')}>Remover imagem</button>}
+    <div className="row nw"><IconEdit value={node.icon} on={v=>set('icon',v)}/><input value={node.name} onChange={e=>set('name',e.target.value)}/></div>
+    <div className="row"><ImgUp label="🖼️ Imagem" obj={node} field="img" ratio={1} shape="round" out={256} on={r=>ed(n=>{setImg(n,'img',r)})}/>
+      {node.img&&<button className="btn sm danger" onClick={()=>ed(n=>{clearImg(n,'img')})}>Remover imagem</button>}
       <label className="pick">Cor<input type="color" value={node.color||'#d4a34a'} onChange={e=>set('color',e.target.value)}/></label>{node.color&&<button className="btn sm" onClick={()=>set('color','')}>Cor padrão</button>}</div>
     <div className="row"><label className="lab">Tipo<select value={node.type} onChange={e=>set('type',e.target.value)}>{[...new Set([...T.TYPES,node.type])].map(t=><option key={t}>{t}</option>)}</select></label>
       <label className="lab">Custo (pontos)<input type="number" min="0" value={node.cost} onChange={e=>set('cost',Math.max(0,parseInt(e.target.value,10)||0))}/></label></div>
@@ -183,7 +184,7 @@ function PlayerTrees(){
   return <div><h2>🌳 Árvore de habilidades</h2>{!L.length&&<p className="empty">Nenhuma árvore atribuída às suas fichas ainda.</p>}
     {L.map(s=><section key={s.id} className="panel"><h3>{s.charName} <small>{s.name}</small><button className="btn sm" onClick={()=>open(s.id,'arvore')}>Abrir árvore</button></h3>
       <p className="txt">Pontos de habilidade: <b>{T.getProg(s).points}</b> · Nível {T.levelOf(s)}</p>
-      <div className="chips">{(db.trees||[]).filter(t=>T.getProg(s).trees.includes(t.id)).map(t=>{const c=T.progressCount(s,t);return <span key={t.id} className="chip">{t.icon} {t.name}: {c.done} / {c.total}</span>})}</div></section>)}</div>;
+      <div className="chips">{(db.trees||[]).filter(t=>T.getProg(s).trees.includes(t.id)).map(t=>{const c=T.progressCount(s,t);return <span key={t.id} className="chip"><Ico v={t.icon}/> {t.name}: {c.done} / {c.total}</span>})}</div></section>)}</div>;
 }
 
 export function TreesPage(){
@@ -200,10 +201,10 @@ export function TreesPage(){
   const ids=tree?tree.nodes.map(n=>n.id):[];
   return <div><h2>🌳 Árvores de habilidades</h2>
     <p className="sub">As árvores são compartilhadas na campanha <b>{camp.name}</b>; o progresso e os pontos são individuais de cada ficha.</p>
-    <div className="tabs">{trees.map(t=><button key={t.id} className={t.id===tree?.id?'on':''} onClick={()=>{setTid(t.id);setNid(null)}}>{t.icon} {t.name}</button>)}<button className="newtab" onClick={create}>＋ NOVA ÁRVORE</button></div>
+    <div className="tabs">{trees.map(t=><button key={t.id} className={t.id===tree?.id?'on':''} onClick={()=>{setTid(t.id);setNid(null)}}><Ico v={t.icon}/> {t.name}</button>)}<button className="newtab" onClick={create}>＋ NOVA ÁRVORE</button></div>
     {!tree&&<p className="empty">Nenhuma árvore ainda. Crie a primeira (Espadachim, Mago, Assassino...).</p>}
     {tree&&<>
-      <div className="panel"><div className="row nw"><input className="ic" value={tree.icon} onChange={e=>edT(t=>{t.icon=e.target.value})}/><input value={tree.name} onChange={e=>edT(t=>{t.name=e.target.value})}/>
+      <div className="panel"><div className="row nw"><IconEdit value={tree.icon} on={v=>edT(t=>{t.icon=v})}/><input value={tree.name} onChange={e=>edT(t=>{t.name=e.target.value})}/>
         <button className="x" title="Excluir árvore" onClick={()=>setDel(true)}>🗑️</button></div>
         <input placeholder="Descrição" value={tree.desc||''} onChange={e=>edT(t=>{t.desc=e.target.value})}/>
         {tree.migratedFrom&&<p className="sub">ℹ️ Árvore criada automaticamente a partir das árvores antigas de {tree.migratedFrom.length} ficha(s). O progresso de cada ficha foi preservado e as árvores antigas continuam guardadas dentro das fichas.</p>}</div>
@@ -217,7 +218,7 @@ export function TreesPage(){
           <div className="row"><b>{own(s.owner)}</b><span>Ficha: {s.charName}</span><span className="chip">{c.done} / {c.total} habilidades</span><span>💠 {p.points} pontos</span><span>Nível {T.levelOf(s)}</span>
             <button className="btn sm" onClick={()=>open(s.id,'arvore')}>Abrir / liberar</button></div>
           <div className="bar"><i style={{width:(c.total?c.done/c.total*100:0)+'%',background:tree.color}}/></div>
-          <div className="chips">{tree.nodes.filter(n=>p.unlocked[n.id]).map(n=><span className="chip" key={n.id}>{n.icon} {n.name}{p.unlocked[n.id].master?' 👑':''}</span>)}{!c.done&&<small className="empty">Nada desbloqueado.</small>}</div></div>})}</div>}
+          <div className="chips">{tree.nodes.filter(n=>p.unlocked[n.id]).map(n=><span className="chip" key={n.id}><Ico v={n.icon}/> {n.name}{p.unlocked[n.id].master?' 👑':''}</span>)}{!c.done&&<small className="empty">Nada desbloqueado.</small>}</div></div>})}</div>}
       {node&&<NodeEditor key={node.id} tree={tree} node={node} sheets={sheets} close={()=>setNid(null)}/>}
       {del&&<Ask title="Excluir árvore" danger yes="EXCLUIR" onNo={()=>setDel(false)} onYes={()=>{upd(d=>{T.purgeNodes(d.sheets,ids);d.sheets.forEach(s=>{if(s.treeProg)s.treeProg.trees=s.treeProg.trees.filter(i=>i!==tree.id)});d.trees=d.trees.filter(t=>t.id!==tree.id)});setDel(false);setTid(null)}}>
         <p>Excluir a árvore <b>{tree.name}</b> ({tree.nodes.length} habilidades)?</p><p className="err">{rows.length} ficha(s) usam esta árvore. Os desbloqueios dela serão removidos e os pontos gastos devolvidos.</p></Ask>}</>}

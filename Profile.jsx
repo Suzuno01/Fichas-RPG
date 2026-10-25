@@ -1,6 +1,7 @@
 import {useApp} from './ctx.js';
 import {readImage} from './storage.js';
 import {Settings} from './Pages.jsx';
+import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 export default function Profile({uid}){
   const {raw,user,isM,upd,camp}=useApp();
   const id=uid||user.id,u=raw.users.find(x=>x.id===id);if(!u)return null;
@@ -12,7 +13,7 @@ export default function Profile({uid}){
   const set=(k,v)=>me&&upd(d=>{d.users.find(x=>x.id===id)[k]=v});
   return <div><h2>👤 Perfil</h2><div className="panel prof" style={{borderColor:camp.color}}>
     <div className="frame" style={{'--fr':camp.color}}>{u.photo?<img src={u.photo} alt=""/>:<span>🧙</span>}</div>
-    {me&&<label className="btn sm">🖼️ Foto<input hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];f&&readImage(f,x=>set('photo',x),320);e.target.value=''}}/></label>}
+    {me&&<ImgUp label="🖼️ Foto" obj={u} field="photo" ratio={3/4} out={480} on={r=>upd(d=>{setImg(d.users.find(x=>x.id===id),'photo',r)})}/>}
     {me?<input className="big c" placeholder={u.name} value={u.display||''} onChange={e=>set('display',e.target.value)}/>:<h2>{u.display||u.name}</h2>}
     <small>{u.role==='master'?'👑 Mestre':'🛡️ Jogador'} · login: {u.name}</small>
     {me?<textarea rows={3} placeholder="Descrição / sobre mim" value={u.bio||''} onChange={e=>set('bio',e.target.value)}/>:<p className="txt">{u.bio||'Sem descrição.'}</p>}</div>

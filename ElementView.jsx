@@ -6,6 +6,7 @@ import {resolveEl,rgba,CORE,TYPES} from './layoutLogic.js';
 import {Rich} from './sheetParts.jsx';
 import {levelOf,getProg} from './treeLogic.js';
 
+import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 // Texto responsivo: com `on`, reduz a fonte (mín. 9px) até caber; sem `on`, quebra linha e rola dentro da caixa.
 function Fit({on,children,className=''}){
   const r=useRef();
@@ -69,19 +70,19 @@ export function ElementView({el,ctx}){
     {!r.rows.length&&<small className="empty">Sem atributos.</small>}</Fit>);
 
   if(t==='status')return wrap(<Fit on={false}>{r.rows.map(({i,obj:x})=><div className="stat" key={x.id}>
-    <div className="sh"><span>{x.icon} {F('status',i,'name','Nome')}</span><span className="nums">{F('status',i,'cur','',{num:1,c:'n'})}/{F('status',i,'max','',{num:1,c:'n'})}</span></div>
+    <div className="sh"><span><Ico v={x.icon}/> {F('status',i,'name','Nome')}</span><span className="nums">{F('status',i,'cur','',{num:1,c:'n'})}/{F('status',i,'max','',{num:1,c:'n'})}</span></div>
     <div className="bar"><i style={{width:Math.max(0,Math.min(100,x.max?x.cur/x.max*100:0))+'%',background:x.color}}/></div></div>)}
     {!r.rows.length&&<small className="empty">Sem status.</small>}</Fit>);
 
   if(t==='money')return wrap(<Fit on={false}>{r.rows.map(({i,obj:m})=><div className="coin" key={m.id} style={{borderColor:m.color}}>
-    <span className="em">{F('money',i,'emoji','💰',{c:'ic'})}</span>{F('money',i,'name','Nome')}{F('money',i,'qty','0',{num:1,c:'n'})}</div>)}
+    <span className="em"><IconEdit value={m.emoji} en={ctx.enS('money')} on={v=>ctx.ed(x=>{x.money[i].emoji=v})}/></span>{F('money',i,'name','Nome')}{F('money',i,'qty','0',{num:1,c:'n'})}</div>)}
     {!r.rows.length&&<small className="empty">Sem dinheiro.</small>}</Fit>);
 
   if(t==='item'||t==='skill'){
     const sk=t==='skill',kind=sk?'skills':'items';
     return wrap(<Fit on={false}><div className="chips">{r.rows.map(({obj:c})=>sk&&!c.on&&!isM
       ?<span className="chip evchip lock" key={c.id}>🔒 Bloqueada</span>
-      :<button className="chip evchip" key={c.id} style={{borderColor:c.bc}} onClick={()=>ctx.open(kind,c.id)}>{c.icon} {c.name}{!sk&&c.qty?` ×${c.qty}`:''}</button>)}</div>
+      :<button className="chip evchip" key={c.id} style={{borderColor:c.bc}} onClick={()=>ctx.open(kind,c.id)}><Ico v={c.icon}/> {c.name}{!sk&&c.qty?` ×${c.qty}`:''}</button>)}</div>
       {!r.rows.length&&<small className="empty">{sk?'Sem habilidades.':'Sem itens.'}</small>}</Fit>);
   }
 

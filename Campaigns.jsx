@@ -3,11 +3,12 @@ import {useApp} from './ctx.js';
 import {uid,now,readImage,newPerms} from './storage.js';
 import {campaignsFor,PER_CAMPAIGN} from './repo.js';
 
+import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 const Fields=({v,on})=><>
   <label className="lab">Nome da campanha<input value={v.name} onChange={e=>on('name',e.target.value)}/></label>
   <label className="lab">Descrição<textarea rows={3} value={v.desc||''} onChange={e=>on('desc',e.target.value)}/></label>
-  <div className="row"><label className="btn sm">🖼️ Capa<input hidden type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];f&&readImage(f,u=>on('cover',u),700);e.target.value=''}}/></label>
-    {v.cover&&<button className="btn sm danger" onClick={()=>on('cover','')}>Remover capa</button>}
+  <div className="row"><ImgUp label="🖼️ Capa" obj={v} field="cover" ratio={7/3} out={700} on={r=>{on('cover',r.img);on('coverO',r.orig);on('coverC',r.crop)}}/>
+    {v.cover&&<button className="btn sm danger" onClick={()=>{on('cover','');on('coverO','');on('coverC',null)}}>Remover capa</button>}
     <label className="pick">Cor principal<input type="color" value={v.color} onChange={e=>on('color',e.target.value)}/></label>
     <label className="pick">Cor secundária<input type="color" value={v.color2} onChange={e=>on('color2',e.target.value)}/></label></div></>;
 

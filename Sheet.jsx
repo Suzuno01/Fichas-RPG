@@ -9,6 +9,7 @@ import {Up,Pick,Rich,Cards} from './sheetParts.jsx';
 import {guardLayout,layoutOf,LAYOUT_V} from './layoutLogic.js';
 import VisualCanvas from './VisualCanvas.jsx';
 import VisualEditor from './VisualEditor.jsx';
+import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 export {Rich};
 const SEC={fields:'dados',attrs:'atributos',status:'status',money:'dinheiro'};
 const LOCK={dados:['fields'],atributos:['attrs','useMod','formula'],status:['status'],dinheiro:['money'],itens:['items'],habilidades:['skills']};
@@ -61,6 +62,7 @@ export default function Sheet({id,tab0,back}){
     if(!en)return <span className={'txt '+(o.c||'')}>{v}</span>;
     const p={className:o.c,placeholder:ph,value:v,onChange:e=>ed(x=>{x[a][i][k]=o.num?+e.target.value:e.target.value})};
     return o.area?<textarea rows={3} {...p}/>:<input type={o.num?'number':'text'} {...p}/>};
+  const enS=a=>can&&(isM||(s.vis?.[SEC[a]]||'edit')==='edit');
   const th=s.theme,T=k=>({value:th[k],on:v=>ed(x=>{x.theme[k]=v}),en:can});
   const style={'--tx':th.text,'--ti':th.title,'--bo':th.border,'--cd':th.card,'--at':th.attr,'--bt':th.btn,fontFamily:th.font,fontSize:th.size,backgroundColor:th.bg,backgroundImage:th.bgImg?`url(${th.bgImg})`:'none'};
   const owner=db.users.find(u=>u.id===s.owner);
@@ -90,7 +92,7 @@ export default function Sheet({id,tab0,back}){
           {tab==='habs'&&<><VisSel k="habilidades"/><Cards s={s} kind="skills" ed={ed} en={canSkill} canAdd={canSkill} isM={isM} notify={ntf} use={use}/></>}
           {tab==='arvore'&&showTree&&<TreeTab s={s} isM={isM} ed={ed} ntf={ntf} mine={mine}/>}
           {tab==='dinheiro'&&<div><VisSel k="dinheiro"/>{s.money.map((m,i)=><div className="coin" key={m.id} style={{borderColor:m.color}}>
-            <span className="em">{F('money',i,'emoji','💰',{c:'ic'})}</span>{F('money',i,'name','Nome')}{F('money',i,'qty','0',{num:1,c:'n'})}
+            <span className="em"><IconEdit value={m.emoji} en={enS('money')} on={v=>ed(x=>{x.money[i].emoji=v})}/></span>{F('money',i,'name','Nome')}{F('money',i,'qty','0',{num:1,c:'n'})}
             {can&&<><input type="color" value={m.color} onChange={e=>ed(x=>{x.money[i].color=e.target.value})}/><button className="x" onClick={()=>del('money',i)}>×</button></>}</div>)}
             {can&&<button className="btn" onClick={()=>add('money',{emoji:'💰',name:'Ouro',qty:0,color:'#d4a34a'})}>＋ ADICIONAR</button>}
             {!s.money.length&&!can&&<p className="empty">Sem dinheiro.</p>}</div>}
@@ -102,8 +104,8 @@ export default function Sheet({id,tab0,back}){
               <select value={im.al} onChange={e=>ed(x=>{x.images[i].al=e.target.value})}><option value="left">Esquerda</option><option value="center">Centro</option><option value="right">Direita</option></select>
               <select value={im.shape} onChange={e=>ed(x=>{x.images[i].shape=e.target.value})}><option value="rect">Reto</option><option value="soft">Arredondado</option><option value="round">Círculo</option></select>
               <label className="lab">Borda<input type="range" min="0" max="10" value={im.bd} onChange={e=>ed(x=>{x.images[i].bd=+e.target.value})}/></label>
-              <input type="color" value={im.bc} onChange={e=>ed(x=>{x.images[i].bc=e.target.value})}/><button className="x" onClick={()=>del('images',i)}>🗑️</button></div>}</figure>)}
-            {can&&<Up label="＋ ADICIONAR IMAGEM" max={900} on={u=>add('images',{src:u,title:'',desc:'',w:60,al:'center',bd:3,bc:'#d4a34a',shape:'soft'})}/>}</div>}
+              <input type="color" value={im.bc} onChange={e=>ed(x=>{x.images[i].bc=e.target.value})}/><ImgUp adjustOnly obj={im} field="src" shape={im.shape} free out={900} on={r=>ed(x=>{setImg(x.images[i],'src',r)})}/><button className="x" onClick={()=>del('images',i)}>🗑️</button></div>}</figure>)}
+            {can&&<ImgUp label="＋ ADICIONAR IMAGEM" free out={900} on={r=>add('images',{src:r.img,srcO:r.orig,srcC:r.crop,title:'',desc:'',w:60,al:'center',bd:3,bc:'#d4a34a',shape:'soft'})}/>}</div>}
           {tab==='visual'&&(can?<div className="vis">
             <Pick label="Fundo" {...T('bg')}/><Pick label="Textos" {...T('text')}/><Pick label="Títulos" {...T('title')}/><Pick label="Bordas" {...T('border')}/>
             <Pick label="Cartas/painéis" {...T('card')}/><Pick label="Atributos" {...T('attr')}/><Pick label="Botões" {...T('btn')}/>
@@ -113,7 +115,7 @@ export default function Sheet({id,tab0,back}){
             :<p className="empty">Você não tem permissão para personalizar esta ficha.</p>)}</>};
   // ---- Ficha visual: nova camada de apresentação (os dados continuam sendo os da ficha; permissões via ed/F acima) ----
   const L=layoutOf(s),commitLayout=l=>ed(x=>{x.layout=l;x.layoutV=LAYOUT_V}),others=db.sheets.filter(o=>o.id!==s.id);
-  const vctx={s,isM,can,ed,F,showTree,mine,open:(k,i)=>setModal(k==='tree'?{tree:1}:{k,id:i}),openTab:t=>setModal({tab:t})};
+  const vctx={s,isM,can,ed,F,enS,showTree,mine,open:(k,i)=>setModal(k==='tree'?{tree:1}:{k,id:i}),openTab:t=>setModal({tab:t})};
   const modalEl=modal&&<div className="modal" onClick={()=>setModal(null)}><div className="panel nmod wide" style={{...style,backgroundImage:'none'}} onClick={e=>e.stopPropagation()}>
     <div className="row"><button className="btn sm" onClick={()=>setModal(null)}>✕ Fechar</button></div>
     {modal.k?<Cards s={s} kind={modal.k} only={modal.id} ed={ed} en={modal.k==='items'?canItem:canSkill} canAdd={false} isM={isM} notify={ntf} use={use}/>
@@ -139,7 +141,7 @@ export default function Sheet({id,tab0,back}){
         <section className="panel portrait">
           {can?<input className="big c" value={s.charName} onChange={e=>ed(x=>{x.charName=e.target.value})}/>:<h3 className="c">{s.charName}</h3>}
           <div className="frame" style={{'--fr':s.frame,background:s.cardBg}}>{s.cover?<img src={s.cover} alt=""/>:<span>🧙</span>}</div>
-          {can&&<div className="row"><Up on={u=>ed(x=>{x.cover=u})}/><Pick label="Moldura" value={s.frame} on={v=>ed(x=>{x.frame=v})}/><Pick label="Fundo do cartão" value={s.cardBg} on={v=>ed(x=>{x.cardBg=v})}/></div>}</section>
+          {can&&<div className="row"><ImgUp obj={s} field="cover" ratio={3/4} out={640} on={r=>ed(x=>{setImg(x,'cover',r)})}/><Pick label="Moldura" value={s.frame} on={v=>ed(x=>{x.frame=v})}/><Pick label="Fundo do cartão" value={s.cardBg} on={v=>ed(x=>{x.cardBg=v})}/></div>}</section>
         <section className={'panel'+hid('dados')}><h3>Dados <VisSel k="dados"/></h3>
           {s.fields.map((f,i)=><div className="row nw" key={f.id}>{F('fields',i,'k','Campo',{c:'k'})}{F('fields',i,'v','Valor')}{can&&<button className="x" onClick={()=>del('fields',i)}>×</button>}</div>)}
           {can&&<button className="btn sm" onClick={()=>add('fields',{k:'',v:''})}>＋ ADICIONAR LINHA</button>}</section>
@@ -154,9 +156,9 @@ export default function Sheet({id,tab0,back}){
         <ProgPanel s={s} isM={isM} ed={ed} ntf={ntf}/>
         <section className={'panel'+hid('status')}><h3>Status <VisSel k="status"/></h3>
           {s.status.map((t,i)=><div className={'stat'+(t.hide&&!isM?' gone':'')} key={t.id}>{isM&&<label className="sw"><input type="checkbox" checked={!!t.hide} onChange={e=>ed(x=>{x.status[i].hide=e.target.checked})}/> 🚫 oculto ao jogador</label>}
-            <div className="sh"><span>{t.icon} {F('status',i,'name','Nome')}</span><span className="nums">{F('status',i,'cur','',{num:1,c:'n'})}/{F('status',i,'max','',{num:1,c:'n'})}</span></div>
+            <div className="sh"><span><Ico v={t.icon}/> {F('status',i,'name','Nome')}</span><span className="nums">{F('status',i,'cur','',{num:1,c:'n'})}/{F('status',i,'max','',{num:1,c:'n'})}</span></div>
             <div className="bar"><i style={{width:Math.max(0,Math.min(100,t.max?t.cur/t.max*100:0))+'%',background:t.color}}/></div>
-            {can&&<div className="row"><input className="ic" value={t.icon} onChange={e=>ed(x=>{x.status[i].icon=e.target.value})}/><Pick label="Cor" value={t.color} on={v=>ed(x=>{x.status[i].color=v})}/>{isM&&<button className="x" onClick={()=>del('status',i)}>×</button>}</div>}</div>)}
+            {can&&<div className="row"><IconEdit value={t.icon} on={v=>ed(x=>{x.status[i].icon=v})}/><Pick label="Cor" value={t.color} on={v=>ed(x=>{x.status[i].color=v})}/>{isM&&<button className="x" onClick={()=>del('status',i)}>×</button>}</div>}</div>)}
           {isM&&<button className="btn sm" onClick={()=>add('status',{name:'Novo status',cur:10,max:10,color:'#b15ae0',icon:'✨'})}>＋ STATUS</button>}</section>
       </div>
       <div className="col main">
