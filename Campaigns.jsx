@@ -28,9 +28,9 @@ function Create({close}){
 }
 
 export function CampaignSelect(){
-  const {db,user,isM,upd}=useApp();const [dlg,setDlg]=useState(false);const list=campaignsFor(db,user);
+  const {db,user,isM,upd,signOut}=useApp();const [dlg,setDlg]=useState(false);const list=campaignsFor(db,user);
   return <div className="worlds"><header className="row"><h1>🌍 {isM?'Minhas campanhas':'Escolha sua campanha'}</h1>
-    <span>{isM?'👑':'🛡️'} {user.display||user.name}</span><button className="btn sm" onClick={()=>upd(d=>{d.session=null})}>Sair</button></header>
+    <span>{isM?'👑':'🛡️'} {user.display||user.name}</span><button className="btn sm" onClick={signOut}>Sair</button></header>
     <div className="grid wgrid">{list.map(c=><Card key={c.id} c={c} go={()=>upd(d=>{d.active=c.id})}/>)}
       {isM&&<button className="wcard newc" onClick={()=>setDlg(true)}>＋<br/>NOVA CAMPANHA</button>}</div>
     {!list.length&&!isM&&<p className="empty">Você ainda não foi adicionado a nenhuma campanha. Peça ao Mestre.</p>}

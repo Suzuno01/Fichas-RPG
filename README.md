@@ -1,18 +1,7 @@
 # Fichas de RPG
 
-Sistema de fichas de RPG (React + Vite). Dados salvos no navegador (localStorage).
+React + Vite. Dados e login no Supabase (projeto "projeto fichasrpgs").
 
-## Rodar localmente
-```
-npm install
-npm run dev
-```
-
-## Build / testes
-```
-npm run build
-npm test
-```
-
-## Deploy
-Vercel: Framework Preset **Vite**, Build Command `npm run build`, Output Directory `dist`.
+- Login: Supabase Auth (Mestre cria os jogadores pelo painel; função `admin-users`).
+- Dados: tabelas `profiles`, `campaigns`, `records` com regras de acesso (RLS).
+- Deploy: Vercel (Vite, `npm run build`, saída `dist`).
