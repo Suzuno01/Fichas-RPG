@@ -12,7 +12,7 @@ import Master from './Master.jsx';
 import {TreesPage} from './TreeView.jsx';
 import {CampaignSelect,CampaignSettings} from './Campaigns.jsx';
 import * as P from './Pages.jsx';
-const NAV=[['home','🏠','Início'],['sheets','📜','Fichas'],['dice','🎲','Dados'],['skills','⚔️','Habilid.'],['items','🎒','Itens'],['tree','🌳','Árvore'],['diary','📖','Diário'],['notes','🔔','Avisos'],['profile','👤','Perfil']];
+const NAV=[['home','🏠','Início'],['sheets','📜','Fichas'],['public','👁️','Públicas'],['dice','🎲','Dados'],['skills','⚔️','Habilid.'],['items','🎒','Itens'],['tree','🌳','Árvore'],['diary','📖','Diário'],['notes','🔔','Avisos'],['profile','👤','Perfil']];
 const MV=['master','players','templates','perms','campaign'];
 
 export default function App(){
@@ -62,11 +62,11 @@ function Main(){
   const c=sdb.campaign;
   const cv=MV.includes(view)&&!isM?'home':view; // jogador nunca renderiza telas do Mestre
   const unread=(sdb.notes||[]).filter(n=>n.to===user.id&&!n.read).length;
-  const open=(id,tab)=>setCur({id,tab});
+  const open=(id,tab,ro)=>setCur({id,tab,ro:!!ro});
   const go=(v,i=null)=>{setCur(null);setIntent(i);setView(MV.includes(v)&&!isM?'home':v)};
   const showProfile=id=>{setPid(id);go('profile')};
   const out=()=>{setCur(null);setView('home');upd(d=>{d.active=null})};
-  const page={home:<P.Home/>,sheets:<P.Library/>,templates:<P.Templates/>,skills:<P.Overview kind="skills"/>,items:<P.Overview kind="items"/>,tree:<TreesPage/>,
+  const page={home:<P.Home/>,sheets:<P.Library/>,public:<P.PublicSheets/>,templates:<P.Templates/>,skills:<P.Overview kind="skills"/>,items:<P.Overview kind="items"/>,tree:<TreesPage/>,
     dice:<Dice/>,diary:<Diary/>,notes:<Notifications/>,profile:<Profile uid={pid}/>,master:<Master/>,players:<P.Players/>,perms:<P.Perms/>,campaign:<CampaignSettings/>}[cv];
   return <Ctx.Provider value={{db:sdb,raw:db,camp:c,user,isM,upd,open,go,showProfile,intent,out,...extra}}><div className="app" style={{'--c1':c.color,'--c2':c.color2}}>
     <aside><div className="logo">⚔️ <span>Fichas</span></div>
@@ -74,5 +74,5 @@ function Main(){
       <div className="me">{isM?'👑':'🛡️'} {user.display||user.name}<button onClick={signOut}>Sair</button></div></aside>
     <main><div className="topbar"><button className="campbar" onClick={out} title="Trocar de campanha">🌍 {c.name} · trocar</button>
       <button onClick={()=>go('notes')}>🔔{unread>0&&<b>{unread}</b>}</button></div>
-      {cur?<Sheet key={cur.id} id={cur.id} tab0={cur.tab} back={()=>setCur(null)}/>:page}</main><Banner/></div></Ctx.Provider>;
+      {cur?<Sheet key={cur.id+(cur.ro?'-ro':'')} id={cur.id} tab0={cur.tab} ro={cur.ro} back={()=>setCur(null)}/>:page}</main><Banner/></div></Ctx.Provider>;
 }

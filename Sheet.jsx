@@ -10,6 +10,8 @@ import {guardLayout,layoutOf,LAYOUT_V} from './layoutLogic.js';
 import VisualCanvas from './VisualCanvas.jsx';
 import VisualEditor from './VisualEditor.jsx';
 import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
+import {ColorPair,attrStyle,patchObj} from './imgtools.jsx';
+import {ThemePlayer,MusicTab} from './music.jsx';
 export {Rich};
 const SEC={fields:'dados',attrs:'atributos',status:'status',money:'dinheiro'};
 const LOCK={dados:['fields'],atributos:['attrs','useMod','formula'],status:['status'],dinheiro:['money'],itens:['items'],habilidades:['skills']};
@@ -43,16 +45,17 @@ function Tree({s,isM,ed,notify}){
     {isM&&<button className="btn" onClick={()=>ed(x=>{x.tree.push({id:uid(),name:'Nova habilidade',desc:'',req:[],done:false})})}>＋ NOVO NÓ</button>}</div>;
 }
 
-export default function Sheet({id,tab0,back}){
-  const {db,user,isM,upd}=useApp();
+export default function Sheet({id,tab0,back,ro}){
+  const {db,user,isM:isM0,upd}=useApp();
+  const isM=isM0&&!ro; // no modo visualização ninguém (nem o Mestre) edita nada
   const s=db.sheets.find(x=>x.id===id);
   const [tab,setTab]=useState(tab0||s?.tabs[0]?.id||'itens');
   const [toast,setToast]=useState(null);
   const [mode,setMode0]=useState(()=>{try{return localStorage.getItem('fichas-rpg-mode')==='classic'?'classic':'visual'}catch{return'visual'}}),[editing,setEditing]=useState(false),[modal,setModal]=useState(null);
   const setMode=m=>{setMode0(m);try{localStorage.setItem('fichas-rpg-mode',m)}catch{}};
   if(!s)return null;
-  const mine=s.owner===user.id,PM=db.perms;
-  const can=isM||(mine&&PM.editSheets);
+  const mine=!ro&&s.owner===user.id,PM=db.perms;
+  const can=!ro&&(isM||(mine&&(PM.editSheets||PM.createSheets))); // quem pode criar a própria ficha também pode preenchê-la
   const canItem=can||(mine&&PM.createItems),canSkill=can||(mine&&PM.createSkills);
   // Áreas bloqueadas pelo Mestre (vis != 'edit') são restauradas aqui, mesmo que a interface permita o clique.
   const ed=fn=>upd(d=>{const x=d.sheets.find(y=>y.id===id);const old=isM?null:structuredClone(x);fn(x);
@@ -70,7 +73,7 @@ export default function Sheet({id,tab0,back}){
   const hid=k=>!isM&&s.vis?.[k]==='hidden'?' gone':'';
   const VisSel=({k})=>isM?<select className="vs" value={s.vis?.[k]||'edit'} onChange={e=>ed(x=>{(x.vis??={})[k]=e.target.value})}><option value="edit">✏️ Jogador edita</option><option value="view">👁️ Só Mestre edita</option><option value="hidden">🚫 Oculto</option></select>:null;
   const ntf=t=>{if(isM&&!mine)upd(d=>{(d.notes??=[]).unshift({id:uid(),to:s.owner,text:t,at:now(),read:false})})};
-  const use=c=>{const m=/^\s*(\d+)\s+(.+?)\s*$/.exec(c.cost||''),si=m?s.status.findIndex(t=>t.name.toLowerCase()===m[2].toLowerCase()):-1;
+  const use=c=>{if(ro)return;const m=/^\s*(\d+)\s+(.+?)\s*$/.exec(c.cost||''),si=m?s.status.findIndex(t=>t.name.toLowerCase()===m[2].toLowerCase()):-1;
     if(si>=0&&s.status[si].cur<+m[1])return setToast('❌ '+s.status[si].name+' insuficiente');
     let r={detail:'',total:''};
     if(c.dmg){try{r=roll(c.dmg,s.attrs)}catch{return setToast('❌ Fórmula inválida: '+c.dmg)}}
@@ -79,7 +82,7 @@ export default function Sheet({id,tab0,back}){
     upd(d=>logRoll(d,user,id,c.name+': '+(c.dmg||'—'),r));
     setToast('🎲 '+c.name+' '+(r.detail?r.detail+' → TOTAL '+r.total:'')+(si>=0?' · '+s.status[si].name+' '+before+' → '+(before-+m[1]):''));
     setTimeout(()=>setToast(null),6000)};
-  const tabs=(l=>l.filter(([k])=>isM||s.vis?.[{itens:'itens',habs:'habilidades',dinheiro:'dinheiro'}[k]]!=='hidden'))([...s.tabs.map(t=>[t.id,t.title]),['itens','🎒 Itens'],['habs','✨ Habilidades'],...(showTree?[['arvore','🌳 Árvore']]:[]),['dinheiro','💰 Dinheiro'],['galeria','🖼️ Galeria'],['visual','🎨 Visual']]);
+  const tabs=(l=>l.filter(([k])=>isM||s.vis?.[{itens:'itens',habs:'habilidades',dinheiro:'dinheiro'}[k]]!=='hidden'))([...s.tabs.map(t=>[t.id,t.title]),['itens','🎒 Itens'],['habs','✨ Habilidades'],...(showTree?[['arvore','🌳 Árvore']]:[]),['dinheiro','💰 Dinheiro'],['galeria','🖼️ Galeria'],['musica','🎵 Música'],...(ro?[]:[['visual','🎨 Visual']])]);
   const ct=s.tabs.find(t=>t.id===tab);
   const newTab=()=>{const n=uid();ed(x=>{x.tabs.push({id:n,title:'Nova aba',html:''})});setTab(n)};
   const saveTpl=()=>{upd(d=>{d.sheets.push({...structuredClone(s),id:uid(),owner:user.id,isTemplate:true,isPublic:false,name:'Modelo: '+s.name,template:null,created:now(),updated:now()})});alert('Modelo criado! Veja na aba Modelos.')};
@@ -106,6 +109,7 @@ export default function Sheet({id,tab0,back}){
               <label className="lab">Borda<input type="range" min="0" max="10" value={im.bd} onChange={e=>ed(x=>{x.images[i].bd=+e.target.value})}/></label>
               <input type="color" value={im.bc} onChange={e=>ed(x=>{x.images[i].bc=e.target.value})}/><ImgUp adjustOnly obj={im} field="src" shape={im.shape} free out={900} on={r=>ed(x=>{setImg(x.images[i],'src',r)})}/><button className="x" onClick={()=>del('images',i)}>🗑️</button></div>}</figure>)}
             {can&&<ImgUp label="＋ ADICIONAR IMAGEM" free out={900} on={r=>add('images',{src:r.img,srcO:r.orig,srcC:r.crop,title:'',desc:'',w:60,al:'center',bd:3,bc:'#d4a34a',shape:'soft'})}/>}</div>}
+          {tab==='musica'&&<MusicTab s={s} can={can} ed={ed} userId={user.id}/>}
           {tab==='visual'&&(can?<div className="vis">
             <Pick label="Fundo" {...T('bg')}/><Pick label="Textos" {...T('text')}/><Pick label="Títulos" {...T('title')}/><Pick label="Bordas" {...T('border')}/>
             <Pick label="Cartas/painéis" {...T('card')}/><Pick label="Atributos" {...T('attr')}/><Pick label="Botões" {...T('btn')}/>
@@ -124,15 +128,19 @@ export default function Sheet({id,tab0,back}){
     <div className="row vbar">
       {isM&&<button className={'btn sm'+(editing?' on':'')} onClick={()=>setEditing(!editing)}>{editing?'👁️ Sair do editor':'✏️ Editar layout'}</button>}
       {isM&&<button className="btn sm" onClick={()=>setModal({prog:1})}>🌳 Progressão (nível, pontos, marcas)</button>}
-      {can&&<button className="btn sm" onClick={()=>setModal({tab:'visual'})}>🎨 Tema</button>}</div>
+      {can&&<button className="btn sm" onClick={()=>setModal({tab:'visual'})}>🎨 Tema</button>}
+      {(can||s.music?.url)&&<button className="btn sm" onClick={()=>setModal({tab:'musica'})}>🎵 Música</button>}</div>
     {isM&&editing?<VisualEditor s={s} layout={L} commit={commitLayout} ctx={vctx} others={others}/>:<VisualCanvas layout={L} ctx={vctx}/>}
   </div>;
   return <div className="sheet" style={style}>
+    <ThemePlayer music={s.music}/>
+    {ro&&<div className="panel rob">👁️ <b>Modo visualização</b> — esta ficha é de <b>{owner?.name||'—'}</b>. Você pode olhar, mas não editar.</div>}
     <header className="shh"><button className="btn sm" onClick={back}>← Voltar</button>
       {can?<input className="big" value={s.name} onChange={e=>ed(x=>{x.name=e.target.value})}/>:<h2>{s.name}</h2>}
       <small>{s.isTemplate?'🧩 Modelo · ':''}👤 {owner?.name||'—'} · criada {fmt(s.created)} · alterada {fmt(s.updated)}{s.template&&` · modelo: ${s.template}`}</small>
       <div className="row">
         {isM&&s.isTemplate&&<label className="sw"><input type="checkbox" checked={s.isPublic} onChange={e=>ed(x=>{x.isPublic=e.target.checked})}/> 🌐 Disponível aos jogadores</label>}
+        {!ro&&!s.isTemplate&&(isM||mine)&&<label className="sw" title="Outros jogadores poderão ver esta ficha (sem editar)"><input type="checkbox" checked={!!s.pub} onChange={e=>ed(x=>{x.pub=e.target.checked})}/> 👁️ Ficha pública</label>}
         {(isM||(mine&&PM.createTemplates))&&!s.isTemplate&&<button className="btn sm" onClick={saveTpl}>🧩 Salvar como modelo</button>}
         {can&&<button className="btn sm danger" onClick={rm}>🗑️ Excluir</button>}</div></header>
     <div className="row modebar"><button className={'btn sm'+(mode==='visual'?' on':'')} onClick={()=>setMode('visual')}>🎴 Ficha</button><button className={'btn sm'+(mode==='classic'?' on':'')} onClick={()=>setMode('classic')}>📋 Formulário clássico</button></div>
@@ -146,10 +154,10 @@ export default function Sheet({id,tab0,back}){
           {s.fields.map((f,i)=><div className="row nw" key={f.id}>{F('fields',i,'k','Campo',{c:'k'})}{F('fields',i,'v','Valor')}{can&&<button className="x" onClick={()=>del('fields',i)}>×</button>}</div>)}
           {can&&<button className="btn sm" onClick={()=>add('fields',{k:'',v:''})}>＋ ADICIONAR LINHA</button>}</section>
         <section className={'panel'+hid('atributos')}><h3>Atributos <small>{s.attrs.length}/10</small> <VisSel k="atributos"/></h3>
-          <div className="attrs">{s.attrs.map((a,i)=><div className="attr" key={a.id}>
+          <div className="attrs">{s.attrs.map((a,i)=><div className="attr" key={a.id} style={attrStyle(a)}>
             {F('attrs',i,'name','Nome',{c:'an'})}{F('attrs',i,'value','0',{num:1,c:'av'})}
             {s.useMod&&a.mod&&<b className="mod">{calcMod(s.formula,a.value)}</b>}
-            {can&&<div className="mini"><label><input type="checkbox" checked={!!a.mod} onChange={e=>ed(x=>{x.attrs[i].mod=e.target.checked})}/> mod.</label><button className="x" onClick={()=>del('attrs',i)}>×</button></div>}</div>)}</div>
+            {can&&<div className="mini"><ColorPair a={a} defText={th.attr} defBorder={th.border} on={p=>ed(x=>{patchObj(x.attrs[i],p)})}/><label><input type="checkbox" checked={!!a.mod} onChange={e=>ed(x=>{x.attrs[i].mod=e.target.checked})}/> mod.</label><button className="x" onClick={()=>del('attrs',i)}>×</button></div>}</div>)}</div>
           {can&&s.attrs.length<10&&<button className="btn sm" onClick={()=>add('attrs',{name:'Atributo',value:10,mod:true})}>＋ ATRIBUTO</button>}
           {isM&&<div className="cfg"><label className="sw"><input type="checkbox" checked={s.useMod} onChange={e=>ed(x=>{x.useMod=e.target.checked})}/> Utilizar modificador</label>
             {s.useMod&&<label className="lab">Fórmula (a = valor do atributo) — ex.: floor(a/2) ou floor((a-10)/2)<input value={s.formula} onChange={e=>ed(x=>{x.formula=e.target.value})}/></label>}</div>}</section>

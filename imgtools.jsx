@@ -107,3 +107,13 @@ function CropModal({src,crop,ratio,shape,out,free,onOk,onCancel}){
       <button type="button" className="btn sm danger" onClick={onCancel}>Cancelar</button></div>
   </div></div>;
 }
+
+// ---- Cores individuais de cada atributo (letras e borda) ----
+export const attrStyle=a=>({'--at':a.tc||undefined,color:a.tc||undefined,borderColor:a.bc||undefined});
+export const patchObj=(o,p)=>Object.entries(p).forEach(([k,v])=>{if(v===undefined)delete o[k];else o[k]=v});
+export function ColorPair({a,on,defText='#ffffff',defBorder='#888888'}){
+  return <span className="cpair">
+    <label title="Cor das letras">🅰️<input type="color" value={a.tc||defText} onChange={e=>on({tc:e.target.value})}/></label>
+    <label title="Cor da borda">▢<input type="color" value={a.bc||defBorder} onChange={e=>on({bc:e.target.value})}/></label>
+    {(a.tc||a.bc)&&<button type="button" className="x" title="Voltar às cores do tema" onClick={()=>on({tc:undefined,bc:undefined})}>↺</button>}</span>;
+}

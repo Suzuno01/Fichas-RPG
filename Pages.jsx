@@ -6,11 +6,11 @@ import {AddExisting} from './Campaigns.jsx';
 import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
 const fmt=d=>d?new Date(d).toLocaleString('pt-BR'):'nunca';
 
-export function SheetCard({s}){
+export function SheetCard({s,ro}){
   const {db,isM,open}=useApp();
-  return <div className="ccard" style={{background:s.cardBg,'--fr':s.frame}} onClick={()=>open(s.id)}>
+  return <div className="ccard" style={{background:s.cardBg,'--fr':s.frame}} onClick={()=>open(s.id,null,ro)}>
     <h4>{s.charName}</h4><div className="frame">{s.cover?<img src={s.cover} alt=""/>:<span>🧙</span>}</div><p>{s.name}</p>
-    {isM&&<small>👤 {db.users.find(u=>u.id===s.owner)?.name||'—'}</small>}</div>;
+    {(isM||ro)&&<small>👤 {db.users.find(u=>u.id===s.owner)?.name||'—'}</small>}</div>;
 }
 const visible=(db,user,isM)=>db.sheets.filter(s=>!s.isTemplate&&(isM||s.owner===user.id));
 
@@ -42,11 +42,12 @@ function NewDlg({close}){
 }
 
 export function Library(){
-  const {db,user,isM,intent}=useApp();const [dlg,setDlg]=useState(intent==='new');
+  const {db,user,isM,intent}=useApp();const [dlg,setDlg]=useState(intent==='new'&&(isM||db.perms.createSheets));
   const list=visible(db,user,isM);
   return <div><h2>📜 Fichas</h2><div className="grid">
     {list.map(s=><SheetCard key={s.id} s={s}/>)}
     {(isM||db.perms.createSheets)&&<button className="ccard newc" onClick={()=>setDlg(true)}>＋<br/>NOVA FICHA</button>}</div>
+    {!isM&&!db.perms.createSheets&&<p className="empty">🔒 O Mestre ainda não liberou a criação de fichas por jogadores.</p>}
     {!list.length&&<p className="empty">Nenhuma ficha ainda.</p>}{dlg&&<NewDlg close={()=>setDlg(false)}/>}</div>;
 }
 
@@ -73,19 +74,31 @@ export function Overview({kind}){
       <div className="chips">{s[kind].filter(c=>kind!=='skills'||c.on||isM).map(c=><span className="chip" style={{borderColor:c.bc}} key={c.id}><Ico v={c.icon}/> {c.name}{kind==='items'&&c.qty?` ×${c.qty}`:''}</span>)}</div></section>)}</div>;
 }
 
+const inviteText=(camp,m)=>`🎲 ${m.reset?'Sua nova senha para':'Você foi convidado(a) para'} a campanha "${camp?.name||'RPG'}"!\n\n🔗 Acesse: ${location.origin}/?login=${encodeURIComponent(m.login)}\n👤 Login: ${m.login}\n🔑 Senha: ${m.pass}\n\nDepois de entrar, você pode trocar a senha em Configurações.`;
+function Invite({made,camp,close}){
+  const txt=inviteText(camp,made),[ok,setOk]=useState(false);
+  const copy=async()=>{try{await navigator.clipboard.writeText(txt)}catch{const t=document.getElementById('invtxt');t&&(t.select(),document.execCommand('copy'))}setOk(true);setTimeout(()=>setOk(false),2500)};
+  return <div className="panel"><div className="row"><b>✅ {made.reset?'Senha alterada!':'Jogador criado!'} Convite pronto — copie e envie:</b><button className="x" onClick={close}>×</button></div>
+    <textarea id="invtxt" rows={8} readOnly value={txt} onFocus={e=>e.target.select()} style={{width:'100%'}}/>
+    <div className="row"><button className="btn" onClick={copy}>{ok?'✔ Copiado!':'📋 COPIAR CONVITE'}</button>
+      <a className="btn" target="_blank" rel="noreferrer" href={'https://wa.me/?text='+encodeURIComponent(txt)}>💬 Enviar pelo WhatsApp</a></div>
+    <small>A senha só aparece agora. Depois disso, só dá para definir uma nova.</small></div>;
+}
 export function Players(){
   const {db,raw,upd,showProfile,addPlayer,resetPassword}=useApp();const [n,setN]=useState(''),[p,setP]=useState(''),[made,setMade]=useState(null),[busy,setBusy]=useState(false);
   const add=async()=>{const login=n.trim();if(login.length<2||p.length<6)return alert('Informe login (2+) e senha (6+ caracteres).');
     if(raw.users.some(u=>u.name.toLowerCase()===login.toLowerCase()))return alert('Esse login já existe.');
     setBusy(true);try{await addPlayer(login,p);setMade({login,pass:p});setN('');setP('')}catch(e){alert(e.message)}setBusy(false)};
+  const resetPw=async u=>{const s=prompt('Nova senha (6+):');if(!s)return;if(s.length<6)return alert('Mínimo 6 caracteres.');
+    try{await resetPassword(u.id,s);setMade({login:u.name,pass:s,reset:true})}catch(e){alert(e.message)}};
   return <div><h2>👥 Jogadores</h2>
     <div className="panel row"><input placeholder="Login do jogador" value={n} onChange={e=>setN(e.target.value)}/><input placeholder="Senha" value={p} onChange={e=>setP(e.target.value)}/><button className="btn" disabled={busy} onClick={add}>{busy?'Criando…':'＋ CRIAR JOGADOR'}</button></div>
-    {made&&<div className="panel row"><span>✅ Jogador criado! Passe estes dados a ele — Login: <b>{made.login}</b> · Senha: <b>{made.pass}</b></span><button className="x" onClick={()=>setMade(null)}>×</button></div>}<AddExisting/>
+    {made&&<Invite made={made} camp={db.campaign} close={()=>setMade(null)}/>}<AddExisting/>
     <div className="grid">{db.users.filter(u=>u.role==='player').map(u=><div className="panel" key={u.id}>
       <h3>🛡️ {u.name}</h3><p>Status: {u.active?'🟢 Ativo':'🔴 Bloqueado'}</p>
       <p>Fichas: {db.sheets.filter(s=>!s.isTemplate&&s.owner===u.id).map(s=>s.charName).join(', ')||'nenhuma'}</p><p>Último acesso: {fmt(u.last)}</p>
       <div className="row"><button className="btn sm" onClick={()=>showProfile(u.id)}>👤 VER PERFIL</button><button className="btn sm" onClick={()=>upd(d=>{const x=d.users.find(y=>y.id===u.id);x.active=!x.active})}>{u.active?'Bloquear':'Liberar'}</button>
-        <button className="btn sm" onClick={async()=>{const s=prompt('Nova senha (6+):');if(s&&s.length>=6){try{await resetPassword(u.id,s);alert('Senha alterada.')}catch(e){alert(e.message)}}else if(s)alert('Mínimo 6 caracteres.')}}>Nova senha</button>
+        <button className="btn sm" onClick={()=>resetPw(u)}>Nova senha</button>
         <button className="x" onClick={()=>confirm('Remover o jogador desta campanha e apagar as fichas dele nela? (a conta continua existindo)')&&upd(d=>{d.campaign.members=d.campaign.members.filter(i=>i!==u.id);d.sheets=d.sheets.filter(s=>!(s.owner===u.id&&s.campaignId===d.campaign.id))})}>🗑️</button></div></div>)}</div></div>;
 }
 
@@ -97,6 +110,15 @@ export function Campaign(){
 }
 
 const PERMS={createSheets:'Criar fichas',editSheets:'Editar as próprias fichas (dados, atributos, status, abas, imagens, visual)',useTemplates:'Usar modelos liberados',createTemplates:'Criar modelos (privados)',createItems:'Criar itens',createSkills:'Criar habilidades',viewTree:'Visualizar a árvore de habilidades',unlockTree:'Desbloquear as próprias habilidades da árvore (gastando pontos)'};
+export function PublicSheets(){
+  const {db,user}=useApp();
+  const list=db.sheets.filter(s=>!s.isTemplate&&s.pub&&s.owner!==user.id);
+  return <div><h2>👁️ Fichas públicas</h2>
+    <p><small>Fichas que os donos deixaram abertas para visualização. Aqui ninguém edita nada. Para publicar a sua, abra a ficha e marque “👁️ Ficha pública”.</small></p>
+    <div className="grid">{list.map(s=><SheetCard key={s.id} s={s} ro/>)}</div>
+    {!list.length&&<p className="empty">Nenhuma ficha pública ainda.</p>}</div>;
+}
+
 export function Perms(){
   const {db,upd}=useApp();
   return <div><h2>🛡️ Permissões dos jogadores</h2><div className="panel">

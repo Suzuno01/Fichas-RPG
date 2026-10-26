@@ -179,3 +179,15 @@ aside{border-right-color:var(--c1,#6b5320)}
 .cropbox{display:grid;place-items:center;margin:10px 0;padding:8px;border-radius:10px;background:repeating-conic-gradient(#3a3a3a 0% 25%,#2a2a2a 0% 50%) 50%/16px 16px}
 .cropbox canvas{box-shadow:0 0 0 2px var(--c1,#d4a34a);max-width:100%}
 .btn.sm.on{outline:2px solid var(--c1,#d4a34a)}
+
+/* atributos coloridos, ficha pública e música tema */
+.attr .an,.attr input.an{color:inherit}
+.cpair{display:inline-flex;align-items:center;gap:4px;font-size:12px}
+.cpair input[type=color]{width:22px;height:22px;padding:0;border:0;background:none;cursor:pointer}
+.rob{border-color:#4a9fd4;text-align:center;margin-bottom:8px}
+.mplayer{position:fixed;left:12px;bottom:12px;z-index:90;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#000c;color:#fff;border:1px solid var(--c1,#d4a34a);max-width:calc(100vw - 24px);flex-wrap:wrap}
+.mplayer .mtitle{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.mplayer input[type=range]{width:90px}
+.mplayer .mhint{color:#ffd37a}
+.ytwrap{position:fixed;left:-400px;bottom:0;width:200px;height:200px;pointer-events:none;opacity:0}
+.musictab input{width:100%}

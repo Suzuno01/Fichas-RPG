@@ -151,28 +151,37 @@ async function resync(){
 
 // ---------- tempo real ----------
 let ch=null;
+// Eventos do tempo real podem vir sem o conteúdo (registros grandes): nesse caso busca a linha completa.
+async function fullRow(table,r){
+  if(r&&r.data!==undefined)return r;
+  const {data}=await sb.from(table).select('*').eq('id',r.id).maybeSingle();
+  return data||null;
+}
 function startRealtime(){
   stopRealtime();
   ch=sb.channel('fichas-rpg')
-    .on('postgres_changes',{event:'*',schema:'public',table:'records'},p=>{
+    .on('postgres_changes',{event:'*',schema:'public',table:'records'},async p=>{
       if(p.eventType==='DELETE'){const id=p.old?.id;if(id)patchRemote(d=>{KINDS.forEach(k=>{d[k]=(d[k]||[]).filter(x=>x.id!==id)})});return}
-      const r=p.new;if(!r||r.updated_by===me)return;
+      let r=p.new;if(!r||r.updated_by===me)return;
+      r=await fullRow('records',r);if(!r)return;
       const x=recFrom(r);
       patchRemote(d=>{const a=(d[r.kind]??=[]),i=a.findIndex(y=>y.id===x.id);
         if(i>=0)a[i]=x;else if(r.kind==='rolls'||r.kind==='notes')a.unshift(x);else a.push(x)});
     })
     .on('postgres_changes',{event:'*',schema:'public',table:'campaigns'},async p=>{
       if(p.eventType==='DELETE'){const id=p.old?.id;if(id)patchRemote(d=>{d.campaigns=d.campaigns.filter(c=>c.id!==id);KINDS.forEach(k=>{d[k]=(d[k]||[]).filter(x=>x.campaignId!==id)});if(d.active===id)d.active=null});return}
-      const r=p.new;if(!r||r.updated_by===me)return;
+      let r=p.new;if(!r||r.updated_by===me)return;
+      r=await fullRow('campaigns',r);if(!r)return;
       const c=campFrom(r),known=cur.campaigns.some(x=>x.id===c.id);
       patchRemote(d=>{const i=d.campaigns.findIndex(x=>x.id===c.id);if(i>=0)d.campaigns[i]=c;else d.campaigns.push(c)});
       if(!known){ // fui adicionado a uma campanha nova: busca as fichas dela
         const {data}=await sb.from('records').select('*').eq('campaign_id',c.id);
         if(data)patchRemote(d=>{data.forEach(r2=>{const a=(d[r2.kind]??=[]);if(!a.some(y=>y.id===r2.id))a.push(recFrom(r2))})})}
     })
-    .on('postgres_changes',{event:'*',schema:'public',table:'profiles'},p=>{
+    .on('postgres_changes',{event:'*',schema:'public',table:'profiles'},async p=>{
       if(p.eventType==='DELETE')return;
-      const r=p.new;if(!r||r.updated_by===me)return;
+      let r=p.new;if(!r||r.updated_by===me)return;
+      r=await fullRow('profiles',r);if(!r)return;
       const u=userFrom(r);
       patchRemote(d=>{const i=d.users.findIndex(x=>x.id===u.id);if(i>=0)d.users[i]=u;else d.users.push(u)});
     })

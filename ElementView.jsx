@@ -7,6 +7,7 @@ import {Rich} from './sheetParts.jsx';
 import {levelOf,getProg} from './treeLogic.js';
 
 import {Ico,IconEdit,ImgUp,setImg,clearImg,icoText} from './imgtools.jsx';
+import {ColorPair,attrStyle,patchObj} from './imgtools.jsx';
 // Texto responsivo: com `on`, reduz a fonte (mín. 9px) até caber; sem `on`, quebra linha e rola dentro da caixa.
 function Fit({on,children,className=''}){
   const r=useRef();
@@ -65,8 +66,8 @@ export function ElementView({el,ctx}){
       {!r.rows.length&&<small className="empty">Sem dados.</small>}</Fit>);
   }
 
-  if(t==='attr')return wrap(<Fit on={false}><div className={'attrs'+(r.group?'':' one')}>{r.rows.map(({i,obj:a})=><div className="attr" key={a.id}>
-    {F('attrs',i,'name','Nome',{c:'an'})}{F('attrs',i,'value','0',{num:1,c:'av'})}{s.useMod&&a.mod&&<b className="mod">{calcMod(s.formula,a.value)}</b>}</div>)}</div>
+  if(t==='attr')return wrap(<Fit on={false}><div className={'attrs'+(r.group?'':' one')}>{r.rows.map(({i,obj:a})=><div className="attr" key={a.id} style={attrStyle(a)}>
+    {F('attrs',i,'name','Nome',{c:'an'})}{F('attrs',i,'value','0',{num:1,c:'av'})}{s.useMod&&a.mod&&<b className="mod">{calcMod(s.formula,a.value)}</b>}{ctx.enS('attrs')&&<ColorPair a={a} defText={s.theme.attr} defBorder={s.theme.border} on={p=>ctx.ed(x=>{patchObj(x.attrs[i],p)})}/>}</div>)}</div>
     {!r.rows.length&&<small className="empty">Sem atributos.</small>}</Fit>);
 
   if(t==='status')return wrap(<Fit on={false}>{r.rows.map(({i,obj:x})=><div className="stat" key={x.id}>
